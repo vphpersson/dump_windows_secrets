@@ -11,6 +11,7 @@ rpc = {file = "https://github.com/vphpersson/rpc/tarball/master"}
 ms_rrp = {file = "https://github.com/vphpersson/ms_rrp/tarball/master"}
 ms_scmr = {file = "https://github.com/vphpersson/ms_scmr/tarball/master"}
 msdsalgs = {file = "https://github.com/vphpersson/msdsalgs/tarball/master"}
+pyutils = {file = "https://github.com/vphpersson/pyutils/tarball/master"}
 python-registry = "*"
 pycryptodome = "*"
 
