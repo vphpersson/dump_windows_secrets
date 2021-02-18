@@ -24,14 +24,14 @@ from ms_rrp.operations.base_reg_save_key import base_reg_save_key, BaseRegSaveKe
 from ms_scmr import MS_SCMR_ABSTRACT_SYNTAX, MS_SCMR_PIPE_NAME
 from ms_scmr.operations.r_open_sc_manager_w import r_open_sc_manager_w, ROpenSCManagerWRequest
 from msdsalgs.ntstatus_value import StatusLogonFailureError, StatusBadNetworkNameError
-from pyutils.my_string import underline, text_align_delimiter
 from Registry.Registry import Registry
 
-from dump_lsa import dump_lsa_secrets
-from dump_lsa.structures.domain_cached_credentials import DomainCachedCredentials2
-from dump_lsa.key_extraction import get_boot_key
-from dump_lsa.secrets_parsing import extract_service_passwords
-from dump_sam import dump_sam_secrets, SAMEntry
+from dump_windows_secrets.dump_lsa import dump_lsa_secrets
+from dump_windows_secrets.dump_lsa.structures.domain_cached_credentials import DomainCachedCredentials2
+from dump_windows_secrets.dump_lsa.key_extraction import get_boot_key
+from dump_windows_secrets.dump_lsa.secrets_parsing import extract_service_passwords
+from dump_windows_secrets.dump_sam import dump_sam_secrets, SAMEntry
+from dump_windows_secrets import get_secrets_output_string
 
 
 LOG = getLogger(__name__)
@@ -218,66 +218,17 @@ async def pre_dump_remote_windows_secrets(
                     dump_reg_path=dump_reg_path
                 )
 
-                account_name_to_password: Dict[str, str] = await resolve_service_credentials(
+                service_account_name_to_password: Dict[str, str] = await resolve_service_credentials(
                     smb_session=smb_session,
                     policy_secrets=policy_secrets
                 ) if (not skip_lsa_secrets and not skip_resolve_service_passwords) else None
 
     print(
-        '\n\n'.join(
-            section
-            for section in [
-                text_align_delimiter(
-                    text=(
-                        f"{underline(string='SAM entries')}\n\n"
-                        + (
-                            '\n\n'.join(
-                                f'Account name: {sam_entry.account_name}\n'
-                                f'NT hash: {sam_entry.nt_hash.hex()}'
-                                for sam_entry in sam_entries if sam_entry.nt_hash is not None
-                            )
-                        )
-                    ),
-                    put_non_match_after_delimiter=False
-                ) if sam_entries else None,
-                text_align_delimiter(
-                    text=(
-                        f"{underline(string='Service credentials')}\n\n"
-                        + (
-                            '\n\n'.join(
-                                f'Account name: {account_name}\n'
-                                f'Password: {password}'
-                                for account_name, password in account_name_to_password.items()
-                            )
-                        )
-                    ),
-                    put_non_match_after_delimiter=False
-                ) if account_name_to_password else None,
-                text_align_delimiter(
-                    text=(
-                        f"{underline(string='Domain cached credentials')}\n\n"
-                        + (
-                            '\n'.join(
-                                str(domain_cached_credentials_entry)
-                                for domain_cached_credentials_entry in domain_cached_credentials
-                            )
-                        )
-                    ),
-                    put_non_match_after_delimiter=False
-                ) if domain_cached_credentials else None,
-                text_align_delimiter(
-                    text=(
-                        f"{underline(string='Policy secrets')}\n\n"
-                        + (
-                            '\n'.join(
-                                f'{key}: {value.hex()}' for key, value in policy_secrets.items()
-                            )
-                        )
-                    ),
-                    put_non_match_after_delimiter=False
-                ) if policy_secrets else None,
-            ]
-            if section
+        get_secrets_output_string(
+            sam_entries=sam_entries,
+            service_account_name_to_password=service_account_name_to_password,
+            domain_cached_credentials=domain_cached_credentials,
+            policy_secrets=policy_secrets
         )
     )
 

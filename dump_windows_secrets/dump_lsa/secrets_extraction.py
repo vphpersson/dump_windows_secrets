@@ -6,9 +6,9 @@ from msdsalgs.crypto import decrypt_aes
 from Registry.Registry import Registry
 from Registry.Registry import RegistryValueNotFoundException
 
-from dump_lsa.structures.domain_cached_credentials import DomainCachedCredentials, DomainCachedCredentials2
-from dump_lsa.structures.lsa_secret import LSASecret
-from dump_lsa.structures.registry_cache_entry import RegistryCacheEntry
+from dump_windows_secrets.dump_lsa.structures.domain_cached_credentials import DomainCachedCredentials, DomainCachedCredentials2
+from dump_windows_secrets.dump_lsa.structures.lsa_secret import LSASecret
+from dump_windows_secrets.dump_lsa.structures.registry_cache_entry import RegistryCacheEntry
 
 
 def get_domain_cached_credentials(
@@ -66,7 +66,7 @@ def get_domain_cached_credentials(
             72+padded_user_length+padded_domain_length
             :
             72+padded_user_length+padded_domain_length+registry_cache_entry.dns_domain_name_length
-        ].decode(encoding='utf-16le')
+        ].decode(encoding='utf-16-le')
 
         if use_new_style:
             domain_cached_credentials.append(

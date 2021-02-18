@@ -1,4 +1,3 @@
-from typing import Dict
 from re import sub as re_sub, I as RE_I
 from logging import getLogger
 
@@ -14,8 +13,8 @@ LOG = getLogger(__name__)
 async def extract_service_passwords(
     rpc_connection: RPCConnection,
     sc_manager_handle: bytes,
-    policy_secrets: Dict[str, bytes]
-) -> Dict[str, str]:
+    policy_secrets: dict[str, bytes]
+) -> dict[str, str]:
     """
 
     :param rpc_connection:
@@ -24,13 +23,13 @@ async def extract_service_passwords(
     :return:
     """
 
-    service_name_to_password: Dict[str, str] = {
+    service_name_to_password: dict[str, str] = {
         re_sub(pattern=r'^_SC_', repl='', string=key, flags=RE_I): value.decode(encoding='utf-16-le')
         for key, value in policy_secrets.items()
         if key.upper().startswith('_SC_')
     }
 
-    account_name_to_password: Dict[str, str] = {}
+    account_name_to_password: dict[str, str] = {}
 
     for service_name, password in service_name_to_password.items():
         account_name: str = f'({service_name})'

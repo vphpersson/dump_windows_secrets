@@ -1,0 +1,11 @@
+-e git+ssh://git@github.com/vphpersson/smb.git#egg=smb
+-e git+ssh://git@github.com/vphpersson/rpc.git#egg=rpc
+-e git+ssh://git@github.com/vphpersson/ms_rrp.git#egg=ms_rrp
+-e git+ssh://git@github.com/vphpersson/ms_scmr.git#egg=ms_scmr
+-e git+ssh://git@github.com/vphpersson/msdsalgs.git#egg=msdsalgs
+-e git+ssh://git@github.com/vphpersson/pyutils.git#egg=pyutils
+python-registry
+pycryptodome
+
+
+

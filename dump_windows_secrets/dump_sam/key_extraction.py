@@ -3,8 +3,8 @@ from hashlib import md5
 from Crypto.Cipher import ARC4
 from msdsalgs.crypto import decrypt_aes
 
-from dump_sam.structures.domain_account_f import DomainAccountF
-from dump_sam.structures.sam import SamKeyDataAes, SamKeyData
+from dump_windows_secrets.dump_sam.structures.domain_account_f import DomainAccountF
+from dump_windows_secrets.dump_sam.structures.sam import SamKeyDataAes, SamKeyData
 
 QWERTY = b'!@#$%^&*()qwertyUIOPAzxcvbnmQQQQQQQQQQQQ)(*@&%\0'
 DIGITS = b'0123456789012345678901234567890123456789\0'
