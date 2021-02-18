@@ -5,7 +5,7 @@ from struct import pack as struct_pack
 from Crypto.Cipher import ARC4
 from msdsalgs.crypto import decrypt_aes, DesEcbLmCipher
 
-from dump_sam.structures.sam import SamHashAes, SamHash
+from dump_windows_secrets.dump_sam.structures.sam import SamHashAes, SamHash
 
 
 # TODO: Add NTHash and LTHash typing classes?

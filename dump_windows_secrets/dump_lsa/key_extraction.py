@@ -1,4 +1,3 @@
-from typing import Tuple
 from pathlib import PureWindowsPath
 
 from Registry.Registry import Registry
@@ -6,8 +5,8 @@ from Registry.Registry import RegistryValueNotFoundException
 
 
 LSA_KEY_NAMES = ('JD', 'Skew1', 'GBG', 'Data')
-BOOT_KEY_PARTS_PATHS: Tuple[PureWindowsPath] = tuple(
-    PureWindowsPath(f'SYSTEM\\CurrentControlSet\\Control\\Lsa\\{key}')
+BOOT_KEY_PARTS_PATHS: tuple[PureWindowsPath] = tuple(
+    PureWindowsPath(f'ControlSet001\\Control\\Lsa\\{key}')
     for key in LSA_KEY_NAMES
 )
 
@@ -40,7 +39,7 @@ def get_boot_key(lsa_registry: Registry, from_root: bool = False):
     )
 
 
-def get_encrypted_policy_secrets_encryption_key(security_registry: Registry) -> Tuple[bytes, bool]:
+def get_encrypted_policy_secrets_encryption_key(security_registry: Registry) -> tuple[bytes, bool]:
     """
     :param security_registry:
     :return:

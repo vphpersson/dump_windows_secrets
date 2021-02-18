@@ -6,10 +6,10 @@ from io import BytesIO
 
 from Registry.Registry import Registry, RegistryValueNotFoundException
 
-from dump_sam.structures.domain_account_f import DomainAccountF
-from dump_sam.structures.user_account_v import UserAccountV
-from dump_sam.key_extraction import obtain_hashed_bootkey
-from dump_sam.secrets_extraction import obtain_hashes_for_rid
+from dump_windows_secrets.dump_sam.structures.domain_account_f import DomainAccountF
+from dump_windows_secrets.dump_sam.structures.user_account_v import UserAccountV
+from dump_windows_secrets.dump_sam.key_extraction import obtain_hashed_bootkey
+from dump_windows_secrets.dump_sam.secrets_extraction import obtain_hashes_for_rid
 
 
 @dataclass
