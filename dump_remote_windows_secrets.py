@@ -4,7 +4,7 @@ from asyncio import run as asyncio_run
 from argparse import Namespace as ArgparseNamespace
 from pathlib import PureWindowsPath
 from uuid import uuid4
-from typing import Dict, Optional, List, Union, Tuple
+from typing import Optional, Union
 from io import BytesIO
 from ipaddress import IPv4Address, IPv6Address
 from sys import stderr
@@ -79,8 +79,8 @@ async def dump_reg(
 
 async def resolve_service_credentials_with_rpc_connection(
     rpc_connection: RPCConnection,
-    policy_secrets: Dict[str, bytes]
-) -> Dict[str, str]:
+    policy_secrets: dict[str, bytes]
+) -> dict[str, str]:
     r_open_sc_manager_w_options = dict(rpc_connection=rpc_connection, request=ROpenSCManagerWRequest())
     async with r_open_sc_manager_w(**r_open_sc_manager_w_options) as r_open_sc_manager_w_response:
         return await extract_service_passwords(
@@ -90,7 +90,7 @@ async def resolve_service_credentials_with_rpc_connection(
         )
 
 
-async def resolve_service_credentials(smb_session: SMBv2Session, policy_secrets: Dict[str, bytes]) -> Dict[str, str]:
+async def resolve_service_credentials(smb_session: SMBv2Session, policy_secrets: dict[str, bytes]) -> dict[str, str]:
     async with smb_session.make_smbv2_transport(pipe=MS_SCMR_PIPE_NAME) as (r, w):
         async with RPCConnection(reader=r, writer=w) as rpc_connection:
             await rpc_connection.bind(
@@ -111,7 +111,7 @@ async def dump_remote_windows_secrets(
     skip_sam_secrets: bool = False,
     dump_reg_share_name: str = 'C$',
     dump_reg_path: Optional[PureWindowsPath] = None
-) -> Tuple[Optional[List[SAMEntry]], Optional[List[DomainCachedCredentials2]], Optional[Dict[str, bytes]]]:
+) -> tuple[Optional[list[SAMEntry]], Optional[list[DomainCachedCredentials2]], Optional[dict[str, bytes]]]:
     """
     Dump Windows secrets remotely over SMB.
 
@@ -218,7 +218,7 @@ async def pre_dump_remote_windows_secrets(
                     dump_reg_path=dump_reg_path
                 )
 
-                service_account_name_to_password: Dict[str, str] = await resolve_service_credentials(
+                service_account_name_to_password: dict[str, str] = await resolve_service_credentials(
                     smb_session=smb_session,
                     policy_secrets=policy_secrets
                 ) if (not skip_lsa_secrets and not skip_resolve_service_passwords) else None
