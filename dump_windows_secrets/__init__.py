@@ -1,7 +1,16 @@
 from typing import Optional, Iterable
+
 from pyutils.my_string import underline, text_align_delimiter
+from rpc.connection import Connection as RPCConnection
+from smb.v2.session import Session as SMBv2Session
+from ms_scmr.operations.r_open_sc_manager_w import r_open_sc_manager_w, ROpenSCManagerWRequest
+from ms_scmr import MS_SCMR_PIPE_NAME, MS_SCMR_ABSTRACT_SYNTAX
+from rpc.structures.context_list import ContextList
+from rpc.structures.context_element import ContextElement
+
 from dump_windows_secrets.dump_sam import SAMEntry
 from dump_windows_secrets.dump_lsa.structures.domain_cached_credentials import DomainCachedCredentials2
+from dump_windows_secrets.dump_lsa.secrets_parsing import extract_service_passwords
 
 
 def get_secrets_output_string(
@@ -68,3 +77,31 @@ def get_secrets_output_string(
             if section
         )
     )
+
+
+async def resolve_service_credentials_with_rpc_connection(
+    rpc_connection: RPCConnection,
+    policy_secrets: dict[str, bytes]
+) -> dict[str, str]:
+    r_open_sc_manager_w_options = dict(rpc_connection=rpc_connection, request=ROpenSCManagerWRequest())
+    async with r_open_sc_manager_w(**r_open_sc_manager_w_options) as r_open_sc_manager_w_response:
+        return await extract_service_passwords(
+            rpc_connection=rpc_connection,
+            sc_manager_handle=r_open_sc_manager_w_response.scm_handle,
+            policy_secrets=policy_secrets
+        )
+
+
+async def resolve_service_credentials(smb_session: SMBv2Session, policy_secrets: dict[str, bytes]) -> dict[str, str]:
+    async with smb_session.make_smbv2_transport(pipe=MS_SCMR_PIPE_NAME) as (r, w):
+        async with RPCConnection(reader=r, writer=w) as rpc_connection:
+            await rpc_connection.bind(
+                presentation_context_list=ContextList([
+                    ContextElement(context_id=0, abstract_syntax=MS_SCMR_ABSTRACT_SYNTAX)
+                ])
+            )
+
+            return await resolve_service_credentials_with_rpc_connection(
+                rpc_connection=rpc_connection,
+                policy_secrets=policy_secrets
+            )
