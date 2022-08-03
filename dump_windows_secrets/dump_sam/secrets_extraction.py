@@ -1,4 +1,3 @@
-from typing import Tuple, Optional
 from hashlib import md5
 from struct import pack as struct_pack
 
@@ -14,7 +13,7 @@ def obtain_hashes_for_rid(
     hashed_bootkey: bytes,
     double_encrypted_lm_hash: bytes,
     double_encrypted_nt_hash: bytes
-) -> Tuple[Optional[bytes], Optional[bytes]]:
+) -> tuple[bytes | None, bytes | None]:
     """
     Decrypt the LM hash and NT hash for the account corresponding to the provided RID.
     :param rid: The RID of the account whose LM hash and NT hash to decrypt.

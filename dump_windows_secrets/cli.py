@@ -1,7 +1,6 @@
-from typing import Optional
 from pathlib import Path, PureWindowsPath
 
-from pyutils.argparse.typed_argument_parser import TypedArgumentParser
+from typed_argument_parser import TypedArgumentParser
 from smb.contrib.argument_parsers import SmbSingleAuthenticationArgumentParser
 
 
@@ -9,6 +8,7 @@ from smb.contrib.argument_parsers import SmbSingleAuthenticationArgumentParser
 class DumpRemoteWindowsSecretsArgumentParser(SmbSingleAuthenticationArgumentParser):
     def __init__(self, *args, **kwargs):
         super().__init__()
+
         self.add_argument(
             'target_address',
             type=str,
@@ -51,8 +51,8 @@ class DumpRemoteWindowsSecretsArgumentParser(SmbSingleAuthenticationArgumentPars
 class DumpWindowsSecretsFromRegDumpsArgumentParser(TypedArgumentParser):
     class Namespace:
         system_dump_path: Path
-        security_dump_path: Optional[Path]
-        sam_dump_path: Optional[Path]
+        security_dump_path: Path | None
+        sam_dump_path: Path | None
 
     def __init__(self, *args, **kwargs):
         super().__init__(

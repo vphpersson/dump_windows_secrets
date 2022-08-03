@@ -1,12 +1,12 @@
 from struct import unpack as struct_unpack
 from contextlib import suppress
-from typing import List, Union, Dict
 
 from msdsalgs.crypto import decrypt_aes
 from Registry.Registry import Registry
 from Registry.Registry import RegistryValueNotFoundException
 
-from dump_windows_secrets.dump_lsa.structures.domain_cached_credentials import DomainCachedCredentials, DomainCachedCredentials2
+from dump_windows_secrets.dump_lsa.structures.domain_cached_credentials import DomainCachedCredentials, \
+    DomainCachedCredentials2
 from dump_windows_secrets.dump_lsa.structures.lsa_secret import LSASecret
 from dump_windows_secrets.dump_lsa.structures.registry_cache_entry import RegistryCacheEntry
 
@@ -15,7 +15,7 @@ def get_domain_cached_credentials(
     security_registry: Registry,
     cached_credentials_decryption_key: bytes,
     use_new_style: bool = True
-) -> List[DomainCachedCredentials2]:
+) -> list[DomainCachedCredentials2]:
     iteration_count = 10240
     with suppress(RegistryValueNotFoundException):
         reg_iteration_count = struct_unpack('<L', security_registry.open(r'Cache').value('NL$IterationCount'))[0]
@@ -27,7 +27,7 @@ def get_domain_cached_credentials(
         if cache_key.name() not in {'NL$Control', 'NL$IterationCount'}
     )
 
-    domain_cached_credentials: List[Union[DomainCachedCredentials, DomainCachedCredentials2]] = list()
+    domain_cached_credentials: list[DomainCachedCredentials | DomainCachedCredentials2] = list()
 
     for registry_cache_entry in registry_cache_entries:
         if registry_cache_entry.initialization_vector == b'\x00' * 16:
@@ -93,7 +93,7 @@ def get_security_policy_secrets(
     security_registry: Registry,
     policy_secrets_decryption_key: bytes,
     use_new_style: bool = True
-) -> Dict[str, bytes]:
+) -> dict[str, bytes]:
 
     security_policy_secret_keys = (
         security_policy_key
@@ -101,7 +101,7 @@ def get_security_policy_secrets(
         if security_policy_key.name() != 'NL$Control'
     )
 
-    secret_name_to_secret_data: Dict[str, bytes] = dict()
+    secret_name_to_secret_data: dict[str, bytes] = dict()
 
     for security_policy_secret_key in security_policy_secret_keys:
         for value_type in ('CurrVal', 'OldVal'):

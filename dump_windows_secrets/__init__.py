@@ -1,4 +1,4 @@
-from typing import Optional, Iterable
+from typing import Iterable
 
 from pyutils.my_string import underline, text_align_delimiter
 from rpc.connection import Connection as RPCConnection
@@ -14,10 +14,10 @@ from dump_windows_secrets.dump_lsa.secrets_parsing import extract_service_passwo
 
 
 def get_secrets_output_string(
-    sam_entries: Optional[Iterable[SAMEntry]] = None,
-    domain_cached_credentials: Optional[Iterable[DomainCachedCredentials2]] = None,
-    policy_secrets: Optional[dict[str, bytes]] = None,
-    service_account_name_to_password: Optional[dict[str, str]] = None
+    sam_entries: Iterable[SAMEntry] | None = None,
+    domain_cached_credentials: Iterable[DomainCachedCredentials2] | None = None,
+    policy_secrets: dict[str, bytes] | None = None,
+    service_account_name_to_password: dict[str, str] | None = None
 ) -> str:
 
     return (
