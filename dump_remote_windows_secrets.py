@@ -3,7 +3,6 @@
 from asyncio import run as asyncio_run
 from argparse import Namespace as ArgparseNamespace
 from pathlib import PureWindowsPath
-from typing import Optional
 from io import BytesIO
 from sys import stderr
 from logging import getLogger, WARNING, StreamHandler
@@ -14,7 +13,8 @@ from smb.v2.session import Session as SMBv2Session
 from rpc.connection import Connection as RPCConnection
 from rpc.structures.context_list import ContextList, ContextElement
 from ms_rrp import MS_RRP_ABSTRACT_SYNTAX, MS_RRP_PIPE_NAME
-from ms_rrp.operations.open_local_machine import open_local_machine, OpenLocalMachineRequest, Regsam
+from ms_rrp.operations.open_local_machine import open_local_machine, OpenLocalMachineRequest
+from ms_rrp.structures.regsam import Regsam
 from msdsalgs.ntstatus_value import StatusLogonFailureError, StatusBadNetworkNameError
 from Registry.Registry import Registry
 from ms_rrp.utils import dump_reg
@@ -34,8 +34,8 @@ async def dump_remote_windows_secrets(
     skip_lsa_secrets: bool = False,
     skip_sam_secrets: bool = False,
     dump_reg_share_name: str = 'C$',
-    dump_reg_path: Optional[PureWindowsPath] = None
-) -> tuple[Optional[list[SAMEntry]], Optional[list[DomainCachedCredentials2]], Optional[dict[str, bytes]]]:
+    dump_reg_path: PureWindowsPath | None = None
+) -> tuple[list[SAMEntry] | None, list[DomainCachedCredentials2] | None, dict[str, bytes] | None]:
     """
     Dump Windows secrets remotely over SMB.
 
@@ -83,7 +83,7 @@ async def dump_remote_windows_secrets(
                         save_path=dump_reg_path
                     )
 
-                    security_data: Optional[bytes] = await dump_reg(
+                    security_data: bytes | None = await dump_reg(
                         rpc_connection=rpc_connection,
                         smb_session=smb_session,
                         root_key_handle=open_local_machine_response.key_handle,
@@ -92,7 +92,7 @@ async def dump_remote_windows_secrets(
                         save_path=dump_reg_path
                     ) if not skip_lsa_secrets else None
 
-                    sam_data: Optional[bytes] = await dump_reg(
+                    sam_data: bytes | None = await dump_reg(
                         rpc_connection=rpc_connection,
                         smb_session=smb_session,
                         root_key_handle=open_local_machine_response.key_handle,

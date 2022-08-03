@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from io import BytesIO
-from typing import Optional, Type
+from typing import Type
 
 from Registry.Registry import Registry
 
@@ -23,7 +23,7 @@ def main():
         boot_key=boot_key
     )
 
-    sam_entries: Optional[list[SAMEntry]] = dump_sam_secrets(
+    sam_entries: list[SAMEntry] | None = dump_sam_secrets(
         sam_dump=args.sam_dump_path.read_bytes(),
         boot_key=boot_key
     ) if args.sam_dump_path else None

@@ -1,6 +1,5 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Union
 from contextlib import suppress
 from io import BytesIO
 
@@ -17,11 +16,11 @@ class SAMEntry:
     rid: int
     account_name: str
     password_hint: str
-    lm_hash: Union[bytes, str]
-    nt_hash: Union[bytes, str]
+    lm_hash: bytes | str
+    nt_hash: bytes | str
 
 
-def dump_sam_secrets(sam_dump: bytes, boot_key: bytes) -> List[SAMEntry]:
+def dump_sam_secrets(sam_dump: bytes, boot_key: bytes) -> list[SAMEntry]:
     """
     Dump secrets from a SAM registry hive.
     The hashes are are stored in an double-encrypted format, and must first be decrypted.
@@ -39,7 +38,7 @@ def dump_sam_secrets(sam_dump: bytes, boot_key: bytes) -> List[SAMEntry]:
         bootkey=boot_key
     )
 
-    sam_entries: List[SAMEntry] = []
+    sam_entries: list[SAMEntry] = []
 
     rid_strings = (
         value.name()
